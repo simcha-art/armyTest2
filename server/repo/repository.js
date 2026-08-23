@@ -1,42 +1,49 @@
 import { getCollections } from "../db/mongodb.js";
-import fs from "node:fs/promises"
-const FILEPATH = "./server/repo/map.json"
+import fs from "node:fs/promises";
+const FILEPATH = "./server/repo/map.json";
 import { ObjectId } from "mongodb";
 
-
-const {gameStateCollection, territoryCollection} = await getCollections()
-
+const { gameStateCollection, territoryCollection } = await getCollections();
 
 const mapRepo = {
-    createMap: async ( )=> {
-        const territories = await fs.readFile(FILEPATH, "utf8").then(data => JSON.parse(data))
-        await territoryCollection.insertMany(territories)
-    }, 
+    createMap: async () => {
+        const territories = await fs
+            .readFile(FILEPATH, "utf8")
+            .then((data) => JSON.parse(data));
+        await territoryCollection.insertMany(territories);
+    },
     getAllTerritories: async () => {
-        const territories = await territoryCollection.find({}).toArray()
-        return territories
-    }
-}
+        const territories = await territoryCollection.find({}).toArray();
+        return territories;
+    },
+};
 
 const gameStateRepo = {
     create: async (playerName, territoriesList) => {
         const result = await gameStateCollection.insertOne({
             playerName,
-            round: 1, 
+            round: 1,
             phase: "reinforce",
             status: "playing",
             winner: null,
-            territorries: territoriesList
-        })
-        return result.insertedId.toString()
+            territories: territoriesList,
+        });
+        return result.insertedId.toString();
     },
-    getById: async (gameId)  => {
-        const gameState = await gameStateCollection.findOne({_id: new ObjectId(gameId)})
-        return gameState
+    getById: async (gameId) => {
+        const gameState = await gameStateCollection.findOne({
+            _id: new ObjectId(gameId),
+        });
+        return gameState;
     },
     update: async (gameId, updatedData) => {
-        const updated = await gameStateCollection.findOneAndUpdate({_id: new ObjectId(gameId)}, {$set: updatedData}, {returnDocument: "after"})
-        return updated
-    }
-}
+        const updated = await gameStateCollection.findOneAndUpdate(
+            { _id: new ObjectId(gameId) },
+            { $set: updatedData },
+            { returnDocument: "after" },
+        );
+        return updated;
+    },
+};
 
+export { gameStateRepo, mapRepo };
