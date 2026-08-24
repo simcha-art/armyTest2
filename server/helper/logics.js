@@ -86,7 +86,7 @@ function computerReinforce(territories) {
     const isProtection = isProtectionState(territories);
     const toReinforce = chooseTerrToReinforce(isProtection, territories);
     toReinforce.soldiers += 3;
-    return {territories, toId: toReinforce.id};
+    return { territories, toId: toReinforce.id };
 }
 
 // function PlayerHQ(territories) {
@@ -194,7 +194,7 @@ function computerAttack(territories) {
     });
     const attack = chooseAttack(availableAttacks);
     if (!attack) {
-        return territories;
+        return { territories, attack };
     }
 
     const attackTerr = attack.ct;
@@ -310,15 +310,20 @@ function computerMove(territories, isProtection) {
         territories.map((t) => [t.id, t.soldiers]),
     );
     const computerTerrirtories = computerTerrs(territories);
+    console.log("computerTerrirtories: ", computerTerrirtories);
     const playerTerritories = playerTerrs(territories);
+    console.log("playerTerritories: ", playerTerritories);
     const originsAvail = findOrigins(computerTerrirtories, playerTerritories);
+    console.log("originsAvail: ", originsAvail);
     const transitionsAvail = findTransitions(
         originsAvail,
         computerTerrirtories,
         isProtection,
     );
+    console.log("transitionsAvail: ", transitionsAvail);
     const transition = chooseTransition(transitionsAvail);
-    if (!transition) return;
+    console.log("transition: ", transition);
+    if (!transition) return { territories, transition };
 
     const { from, to } = transition;
     let sentSoldiers;
@@ -573,7 +578,6 @@ const exampleTerrs = [
         distanceFromPlayerHQ: 2,
     },
 ];
-
 
 export {
     calculatePower,

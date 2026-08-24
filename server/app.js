@@ -5,6 +5,7 @@ import { errorHandler, logger, validGame } from "./middleware/middlewares.js";
 import {
     attack,
     createNewGame,
+    endTurn,
     getExistGame,
     move,
     reinforce,
@@ -26,7 +27,7 @@ app.get("/games/:id", getExistGame);
 app.post("/games/:id/reinforce", validGame, reinforce);
 app.post("/games/:id/attack", validGame, attack);
 app.post("/games/:id/move", validGame, move);
-app.post("/games/:id/end-turn", (req, res) => res.end("not implemented"));
+app.post("/games/:id/end-turn", validGame, endTurn);
 
 app.use(errorHandler);
 

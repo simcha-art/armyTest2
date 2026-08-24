@@ -213,6 +213,14 @@ const service = {
         return updatedGame;
     },
 
+    endTurn: (game) => {
+        if (game.phase !== "move") {
+            const err = new Error("You can end turn only in phase move");
+            err.status = 400;
+            throw err;
+        }
+    },
+
     computerTurn: async (game) => {
         let territories = game.territories;
         let result;
@@ -226,16 +234,19 @@ const service = {
             territoryId: result.toId,
             soldiersAdded: 3,
         });
+
         result = computerAttack(territories);
         territories = result.territories;
         const attack = result.attack;
-        computerEvents.push({
-            type: "attack",
-            fromId: attack.ct.id,
-            toId: attack.pt.id,
-            winner: attack.winner,
-            soldiers: attack.sentSoldiers,
-        });
+        if (attack) {
+            computerEvents.push({
+                type: "attack",
+                fromId: attack.ct.id,
+                toId: attack.pt.id,
+                winner: attack.winner,
+                soldiers: attack.sentSoldiers,
+            });
+        }
 
         if (attack.isWinTheGame) {
             game.status = "finished";
@@ -247,15 +258,18 @@ const service = {
         // if computer did not win the game
         result = computerMove(territories, isProtection);
         territories = result.territories;
-        computerEvents.push({
-            type: "move",
-            fromId: result.transition.from.id,
-            toId: result.transition.to.id,
-            soldiers: result.transition.sentSoldiers,
-        });
+        const transition = result.transition;
+        if (transition) {
+            computerEvents.push({
+                type: "move",
+                fromId: result.transition.from.id,
+                toId: result.transition.to.id,
+                soldiers: result.transition.sentSoldiers,
+            });
+        }
         game.territories = territories;
-        game.round += 1
-        game.phase = "reinforce"
+        game.round += 1;
+        game.phase = "reinforce";
         updatedGame = await gameStateRepo.update(game.id, game);
         return { updatedGame, computerEvents };
     },

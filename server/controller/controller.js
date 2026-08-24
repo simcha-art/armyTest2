@@ -68,7 +68,12 @@ async function attack(req, res, next) {
             throw err;
         }
 
-        const [updatedGame, attackWinner] = await service.attack(game, fromId, toId, soldiers);
+        const [updatedGame, attackWinner] = await service.attack(
+            game,
+            fromId,
+            toId,
+            soldiers,
+        );
         response = {
             game: updatedGame,
             playerEvent: {
@@ -81,7 +86,7 @@ async function attack(req, res, next) {
             computerEvents: [],
         };
 
-        console.log(response.playerEvent.Winner)
+        console.log(response.playerEvent.Winner);
         res.json(response);
     } catch (error) {
         next(error);
@@ -91,28 +96,53 @@ async function attack(req, res, next) {
 async function move(req, res, next) {
     try {
         const game = req.game;
-        const {fromId, toId, soldiers} = req.body;
+        const { fromId, toId, soldiers } = req.body;
         if (!fromId || !toId || !soldiers) {
-            const err = new Error("body must contain fromId, toId and soldiers")
-            err.stutus = 400
-            throw err
+            const err = new Error(
+                "body must contain fromId, toId and soldiers",
+            );
+            err.stutus = 400;
+            throw err;
         }
-        const updatedGameByMove = await service.move(game, fromId, toId, soldiers)
-        const {updatedGame, computerEvents} = await service.computerTurn(game)
+        const updatedGameByMove = await service.move(
+            game,
+            fromId,
+            toId,
+            soldiers,
+        );
+        const { updatedGame, computerEvents } =
+            await service.computerTurn(game);
         const response = {
             game: updatedGame,
             playerEvent: {
                 type: "move",
                 fromId,
                 toId,
-                soldiers
+                soldiers,
             },
             computerEvents,
-        }
-        res.json(response)
+        };
+        res.json(response);
     } catch (error) {
-        next(error)
+        next(error);
     }
 }
 
-export { createNewGame, getExistGame, reinforce, attack, move };
+async function endTurn(req, res, next) {
+    try {
+        const game = req.game;
+        service.endTurn(game);
+        const { updatedGame, computerEvents } =
+            await service.computerTurn(game);
+        const response = {
+            game,
+            playerEvent: null,
+            computerEvents,
+        };
+        res.json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export { createNewGame, getExistGame, reinforce, attack, move, endTurn };
