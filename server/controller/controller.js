@@ -64,7 +64,7 @@ async function attack(req, res, next) {
         const { fromId, toId, soldiers } = req.body;
         if (!fromId || !toId || !soldiers) {
             const err = "Invalid body, should contain fromId, toId, soldiers";
-            err.status = 500;
+            err.status = 400;
             throw err;
         }
 
@@ -88,4 +88,31 @@ async function attack(req, res, next) {
     }
 }
 
-export { createNewGame, getExistGame, reinforce, attack };
+async function move(req, res, next) {
+    try {
+        const game = req.game;
+        const {fromId, toId, soldiers} = req.body;
+        if (!fromId || !toId || !soldiers) {
+            const err = new Error("body must contain fromId, toId and soldiers")
+            err.stutus = 400
+            throw err
+        }
+        const updatedGameByMove = await service.move(game, fromId, toId, soldiers)
+        const {updatedGame, computerEvents} = await service.computerTurn(game)
+        const response = {
+            game: updatedGame,
+            playerEvent: {
+                type: "move",
+                fromId,
+                toId,
+                soldiers
+            },
+            computerEvents,
+        }
+        res.json(response)
+    } catch (error) {
+        next(error)
+    }
+}
+
+export { createNewGame, getExistGame, reinforce, attack, move };

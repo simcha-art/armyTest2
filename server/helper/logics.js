@@ -86,7 +86,7 @@ function computerReinforce(territories) {
     const isProtection = isProtectionState(territories);
     const toReinforce = chooseTerrToReinforce(isProtection, territories);
     toReinforce.soldiers += 3;
-    return toReinforce.id;
+    return {territories, toId: toReinforce.id};
 }
 
 // function PlayerHQ(territories) {
@@ -215,6 +215,9 @@ function computerAttack(territories) {
             attackPower,
             defencePower,
         );
+        if (defenceTerr.headquarters) {
+            attack.isWinTheGame = true;
+        }
     } else {
         attack.winner = "player";
         defenceTerr.soldiers = calculateSurvivals(
@@ -256,7 +259,7 @@ function findTransitions(
     const transitionsAvail = [];
     originsAvailable.forEach((from) => {
         computerTerrirtories.forEach((to) => {
-            if (from.id !== to.id) {
+            if (from.neighbors.includes(to.id)) {
                 if (isProtectionState) {
                     if (to.distanceFromComputerHQ < from.distanceFromComputerHQ)
                         transitionsAvail.push({ from, to });
@@ -578,4 +581,5 @@ export {
     computerReinforce,
     computerAttack,
     computerMove,
+    isProtectionState,
 };

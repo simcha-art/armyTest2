@@ -1,5 +1,12 @@
 import { gameStateRepo, mapRepo } from "../repo/repository.js";
-import { calculatePower, calculateSurvivals } from "../helper/logics.js";
+import {
+    calculatePower,
+    calculateSurvivals,
+    computerAttack,
+    computerMove,
+    computerReinforce,
+    isProtectionState,
+} from "../helper/logics.js";
 
 const service = {
     createNewGame: async (playerName) => {
@@ -125,7 +132,7 @@ const service = {
         const attackPower = calculatePower(soldiers);
         const defencePower = calculatePower(toTerr.soldiers);
         if (attackPower > defencePower) {
-            attackWinner = "player"
+            attackWinner = "player";
             toTerr.owner = "player";
             toTerr.soldiers = calculateSurvivals(
                 soldiers,
@@ -133,7 +140,7 @@ const service = {
                 defencePower,
             );
         } else {
-            attackWinner = "computer"
+            attackWinner = "computer";
             toTerr.soldiers = calculateSurvivals(
                 toTerr.soldiers,
                 defencePower,
@@ -151,6 +158,106 @@ const service = {
 
         const updatedGame = await gameStateRepo.update(game.id, game);
         return [updatedGame, attackWinner];
+    },
+
+    move: async (game, fromId, toId, soldiers) => {
+        const fromTerr = game.territories.find((t) => t.id === fromId);
+        const toTerr = game.territories.find((t) => t.id === toId);
+
+        let err;
+        if (fromTerr.owner !== "player") {
+            err = new Error("You can move only from your territories");
+        }
+
+        if (toTerr.owner !== "player") {
+            err = new Error("You can move only to your territories");
+        }
+
+        if (!fromTerr.neighbors.includes(toTerr.id)) {
+            err = new Error(
+                "You can move soldiers only from one territory to its neighbor",
+            );
+        }
+
+        if (soldiers <= 0) {
+            err = new Error("soldiers number must be positive");
+        }
+
+        if (soldiers !== Math.round(soldiers)) {
+            err = new Error("soldiers number must be an integer");
+        }
+
+        if (fromTerr.soldiers === soldiers) {
+            err = new Error(
+                "You must leave at least one soldier to protect the territory",
+            );
+        }
+
+        if (fromTerr.soldiers < soldiers) {
+            err = new Error("You don't have enough soldiers in the territory");
+        }
+
+        if (game.phase !== "move") {
+            err = new Error("You cannot move soldiers now");
+        }
+
+        if (err) {
+            err.status = 400;
+            throw err;
+        }
+
+        fromTerr.soldiers -= soldiers;
+        toTerr.soldiers += soldiers;
+
+        const updatedGame = await gameStateRepo.update(game.id, game);
+        return updatedGame;
+    },
+
+    computerTurn: async (game) => {
+        let territories = game.territories;
+        let result;
+        let updatedGame;
+        const computerEvents = [];
+        const isProtection = isProtectionState(territories);
+        result = computerReinforce(territories);
+        territories = result.territories;
+        computerEvents.push({
+            type: "reinforce",
+            territoryId: result.toId,
+            soldiersAdded: 3,
+        });
+        result = computerAttack(territories);
+        territories = result.territories;
+        const attack = result.attack;
+        computerEvents.push({
+            type: "attack",
+            fromId: attack.ct.id,
+            toId: attack.pt.id,
+            winner: attack.winner,
+            soldiers: attack.sentSoldiers,
+        });
+
+        if (attack.isWinTheGame) {
+            game.status = "finished";
+            game.winner = "computer";
+            game.territories = territories;
+            updatedGame = await gameStateRepo.update(game.id, game);
+            return { updatedGame, computerEvents };
+        }
+        // if computer did not win the game
+        result = computerMove(territories, isProtection);
+        territories = result.territories;
+        computerEvents.push({
+            type: "move",
+            fromId: result.transition.from.id,
+            toId: result.transition.to.id,
+            soldiers: result.transition.sentSoldiers,
+        });
+        game.territories = territories;
+        game.round += 1
+        game.phase = "reinforce"
+        updatedGame = await gameStateRepo.update(game.id, game);
+        return { updatedGame, computerEvents };
     },
 };
 
