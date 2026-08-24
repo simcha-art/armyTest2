@@ -3,6 +3,7 @@ import cors from "cors";
 import env from "dotenv";
 import { errorHandler, logger, validGame } from "./middleware/middlewares.js";
 import {
+    attack,
     createNewGame,
     getExistGame,
     reinforce,
@@ -22,7 +23,7 @@ app.post("/games", createNewGame);
 
 app.get("/games/:id", getExistGame);
 app.post("/games/:id/reinforce", validGame, reinforce);
-app.post("/games/:id/attack", (req, res) => res.end("not implemented"));
+app.post("/games/:id/attack", validGame, attack);
 app.post("/games/:id/move", (req, res) => res.end("not implemented"));
 app.post("/games/:id/end-turn", (req, res) => res.end("not implemented"));
 

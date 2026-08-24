@@ -34,6 +34,8 @@ const gameStateRepo = {
         const gameState = await gameStateCollection.findOne({
             _id: new ObjectId(gameId),
         });
+        gameState.id = gameState._id.toString()
+        delete gameState._id
         return gameState;
     },
     update: async (gameId, updatedData) => {
@@ -42,6 +44,8 @@ const gameStateRepo = {
             { $set: updatedData },
             { returnDocument: "after" },
         );
+        updated.id = updated._id.toString()
+        delete updated._id
         return updated;
     },
 };

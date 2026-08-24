@@ -28,10 +28,9 @@ async function getExistGame(req, res, next) {
 
 async function reinforce(req, res, next) {
     try {
-        const gameId = req.params.id;
         const game = req.game;
         const territoryId = req.body.territoryId;
-        const updatedGame = await service.reinforce(gameId, game, territoryId);
+        const updatedGame = await service.reinforce(game, territoryId);
         const response = {
             game: updatedGame,
             playerEvent: {
@@ -41,11 +40,52 @@ async function reinforce(req, res, next) {
             },
             computerEvents: [],
         };
-        console.log(response.game)
         res.json(response);
     } catch (error) {
         next(error);
     }
 }
 
-export { createNewGame, getExistGame, reinforce };
+async function attack(req, res, next) {
+    try {
+        let response;
+        const game = req.game;
+
+        if (req.body.skip) {
+            const gameState = await service.skip(game);
+            response = {
+                game: gameState,
+                playerEvent: null,
+                computerEvents: [],
+            };
+            return res.json(response);
+        }
+
+        const { fromId, toId, soldiers } = req.body;
+        if (!fromId || !toId || !soldiers) {
+            const err = "Invalid body, should contain fromId, toId, soldiers";
+            err.status = 500;
+            throw err;
+        }
+
+        const [updatedGame, attackWinner] = await service.attack(game, fromId, toId, soldiers);
+        response = {
+            game: updatedGame,
+            playerEvent: {
+                type: "attack",
+                fromId,
+                toId,
+                soldiers,
+                winner: attackWinner,
+            },
+            computerEvents: [],
+        };
+
+        console.log(response.playerEvent.Winner)
+        res.json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export { createNewGame, getExistGame, reinforce, attack };
